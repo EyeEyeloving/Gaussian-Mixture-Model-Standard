@@ -38,6 +38,6 @@ public:
     gmModel trainGaussianMixture(Eigen::MatrixXd& data_block);
 
 private:
-    void validateDataInput(Eigen::MatrixXd& data_block);
+    Eigen::MatrixXd validateDataInput(Eigen::MatrixXd& data_block);
 };
 

@@ -19,8 +19,8 @@ public:
 
 	ExpectationMaximization(int n_Dims);
 	
-	void trainExpectationMaximization(const Eigen::MatrixXd& data_block, const int& number_components, 
-		Eigen::MatrixXd& mu, Eigen::MatrixXd& sigma, std::vector<double>& component_proportion);
+	void trainExpectationMaximization(const Eigen::MatrixXd data_block, const int& number_components, 
+		Eigen::MatrixXd mu, Eigen::MatrixXd sigma, std::vector<double> component_proportion);
 	
 private:
 	/**
