@@ -1,3 +1,5 @@
+/*Generated and Debuged by GPT*/
+
 #include "KMeansPP.h"
 #include <iostream>
 #include <cstdlib>
