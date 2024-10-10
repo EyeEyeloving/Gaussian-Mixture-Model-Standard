@@ -57,7 +57,5 @@ private:
 
 	Eigen::MatrixXd updateSigma(const Eigen::MatrixXd data_block, const Eigen::VectorXd& mu, const Eigen::RowVectorXd& responsibility);
 
-	double updatedNegLogLikLiHood(const Eigen::MatrixXd data_block, 
-		const int& number_components, const Eigen::MatrixXd& mu, Eigen::MatrixXd& sigma, std::vector<double>& component_proportion);
 };
 

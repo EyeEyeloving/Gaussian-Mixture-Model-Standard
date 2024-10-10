@@ -34,15 +34,12 @@ void ExpectationMaximization::trainExpectationMaximization(const Eigen::MatrixXd
 	// std::vector<std::vector<double>> responsibility(number_data, std::vector<double>(number_components, 0.0)); 
 	// 旧代码：二维数组初始化
 
-	double logliklihood_prev = 0;
+	double neglogliklihood_prev = INT_MAX;
 	int EM_step = 0;
 	double epsilon_cur = 1;
+	Eigen::MatrixXd ASigma(number_data_dimension, number_data_dimension);
 
 	while (!early_stop && EM_step < max_iter) {
-
-		// 打印当前的EM迭代步次
-		++EM_step;
-		std::cout << "The current EM-step is: " << EM_step << std::endl;
 
 		/*E-step: 计算每一个组分之于输入数据的隶属度*/
 
@@ -70,7 +67,7 @@ void ExpectationMaximization::trainExpectationMaximization(const Eigen::MatrixXd
 		// 再次归一化：对 responsibility 矩阵的每一行进行归一化
 		responsibility.array().rowwise() /= (response_sum.array() + custsys_realmin);
 
-		std::cout << responsibility.transpose() << std::endl;
+		// std::cout << responsibility.transpose() << std::endl;
 
 		//// 每一个样本进行归一化
 		//for (int j = 0; j < number_components; j++) {
@@ -88,21 +85,40 @@ void ExpectationMaximization::trainExpectationMaximization(const Eigen::MatrixXd
 		//}
 		//旧代码：for循环很多，需要精简
 
-		///*M-step*/
-		//for (int j = 0; j < number_components; j++) {
-		//	const Eigen::RowVectorXd& response_jrow = responsibility.row(j); // 非常量引用必须为左值
-		//	component_proportion[j] = 1 / number_data * updateComponentProportion(response_jrow);
-		//	mu.col(j) = 1 / response_jrow.sum() * updateMu(data_block, response_jrow);
-		//	sigma += 1 / number_data * updateSigma(data_block, mu.col(j), response_jrow);
-		//}
+		/*check convergency: 检查收敛性*/
 
-		///*check convergency*/
-		//double logliklihood_cur = updatedNegLogLikLiHood(data_block, number_components, mu, sigma, component_proportion);
-		//epsilon_cur = (logliklihood_cur - logliklihood_prev) / logliklihood_prev;
-		//std::cout << epsilon_cur << std::endl;
-		//if (epsilon_cur < epsilon_early_stop) early_stop = true;
+		// 将std::vector<double>转换为Eigen::VectorXd
+		Eigen::RowVectorXd ComponentProportions = Eigen::Map<const Eigen::RowVectorXd>(component_proportion.data(), component_proportion.size());
+		Eigen::MatrixXd exp_loglik = responsibility.array().colwise() * ComponentProportions.transpose().array();
+		double neg_logliklihood_cur = -(exp_loglik.rowwise().sum().array() + custsys_realmin).log().mean();
+		// double logliklihood_cur = updatedNegLogLikLiHood(data_block, number_components, mu, sigma, component_proportion);
 
-		std::cin.get();
+		epsilon_cur = std::abs((neg_logliklihood_cur - neglogliklihood_prev) / neglogliklihood_prev);
+		std::cout << epsilon_cur << std::endl;
+		if (epsilon_cur < epsilon_early_stop) {
+			early_stop = true;
+			break;
+		}
+		neglogliklihood_prev = neg_logliklihood_cur;
+
+		/*增加EM-step*/
+
+		// 打印当前的EM迭代步次
+		++EM_step;
+		std::cout << "The current EM-step is: " << EM_step << std::endl;
+
+		/*M-step: 当还未收敛时，则更新参数*/
+		ASigma.setZero();
+		for (int j = 0; j < number_components; j++) {
+			const Eigen::RowVectorXd& response_jrow = responsibility.row(j); // 非常量引用必须为左值
+			component_proportion[j] = updateComponentProportion(response_jrow);
+			mu.col(j) = updateMu(data_block, response_jrow);
+			ASigma += updateSigma(data_block, mu.col(j), response_jrow);
+		}
+		ASigma /= number_data;
+		sigma = ASigma;
+
+		// std::cin.get();
 	}
 }
 
@@ -142,24 +158,17 @@ Eigen::RowVectorXd ExpectationMaximization::estimateExpectationStep(const Eigen:
 }
 
 double ExpectationMaximization::updateComponentProportion(const Eigen::RowVectorXd& responsibility) {
-	return responsibility.sum(); // 还需要除以数据的大小
+	return responsibility.mean(); 
 }
 
 Eigen::VectorXd ExpectationMaximization::updateMu(Eigen::MatrixXd data_block, const Eigen::RowVectorXd& responsibility) {
-	return (data_block.array().rowwise() * responsibility.array()).rowwise().sum(); 
+	return (data_block * responsibility.transpose()) / responsibility.sum();
+
+	// 在matlab的gmcluster_learn函数中，利用了已计算的component_proportion
 }
 
-//Eigen::MatrixXd ExpectationMaximization::updateSigma(const Eigen::MatrixXd data_block, const Eigen::VectorXd& mu, const Eigen::RowVectorXd& responsibility) {
-//	Eigen::MatrixXd Xmu = (data_block.colwise() - mu).rowwise()*responsibility.array().sqrt();
-//	return Xmu * Xmu.transpose();
-//}
-
-//double ExpectationMaximization::updatedNegLogLikLiHood(const Eigen::MatrixXd data_block, 
-//	const int& number_components, const Eigen::MatrixXd& mu, Eigen::MatrixXd& sigma, std::vector<double>& component_proportion) {
-//	Eigen::VectorXd response_sum(data_block.cols(), 0.0);
-//	for (int j = 0; j < number_components; j++) {
-//		const Eigen::VectorXd& mu_col = mu.col(j);
-//		response_sum += component_proportion[j] * estimateExpectationStep(data_block, mu_col, sigma);
-//	}
-//	return -response_sum.array().log().mean();
-//}
+Eigen::MatrixXd ExpectationMaximization::updateSigma(const Eigen::MatrixXd data_block, const Eigen::VectorXd& mu, const Eigen::RowVectorXd& responsibility) {
+	Eigen::MatrixXd Xmu = data_block.array().colwise() - mu.array();
+	Eigen::MatrixXd XX = Xmu.array().rowwise() * responsibility.array().sqrt();  // 逐元素乘法
+	return XX * XX.transpose();  // 矩阵乘法
+}
