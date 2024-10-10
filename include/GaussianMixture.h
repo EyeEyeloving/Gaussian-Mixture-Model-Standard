@@ -39,5 +39,10 @@ public:
 
 private:
     Eigen::MatrixXd validateDataInput(Eigen::MatrixXd& data_block);
+
+    /**
+    * 输入数据归一化，减少模型训练结果的奇异性
+    */
+    void normalizeDataInput(Eigen::MatrixXd& data_block);
 };
 
