@@ -8,7 +8,8 @@
 class KMeansPP {
 public:
     // 构造函数，接受聚类数量k和最大迭代次数max_iters
-    KMeansPP(int k, int max_iters);
+    // KMeansPP(int k, int max_iters);
+    KMeansPP(int k, int max_iters, double tolerance);
 
     // 运行K-means++初始化和K-means聚类
     void fit(const Eigen::MatrixXd& data);
@@ -22,6 +23,7 @@ public:
 private:
     int k;  // 聚类数
     int max_iters;  // 最大迭代次数
+    double tolerance;
     Eigen::MatrixXd centroids;  // 质心
 
     // 初始化质心 (K-means++)

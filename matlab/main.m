@@ -11,6 +11,8 @@ data_block = (data_block-min_value)./(max_value-min_value);
 
 rng(42);
 k = 5;
+PComponents = zeros(1, k);
+PComponents(:) = 1/5;
 [idx, mu] = kmeans(data_block, k, 'Start', 'plus', 'MaxIter', 100, 'Display', 'iter');
 
 for i = 1:k
@@ -24,3 +26,8 @@ sigma = zeros(size(cov_matrix{1}));
 for nc = 1:numel(cov_matrix)
     sigma = sigma + 1/k*cov_matrix{nc};
 end
+
+%%
+para_init = struct('mu', mu, 'Sigma', sigma, 'ComponentProportion', PComponents);
+GMModel = fitgmdist(data_block, k, "CovarianceType", "full", "SharedCovariance", true, ...
+    "Start", para_init);

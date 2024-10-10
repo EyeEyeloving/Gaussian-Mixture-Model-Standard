@@ -13,6 +13,7 @@ public:
 	double epsilon_early_stop;
 	bool early_stop;
 	int max_iter;
+	double prob_cutoff;
 	
 public:
 	ExpectationMaximization();
@@ -47,7 +48,7 @@ private:
 	 *         类型: double
 	 *         维度: [1]，与输入的数据流长度一致。
 	 */
-	Eigen::VectorXd estimateExpectationStep(const Eigen::MatrixXd data_block, const Eigen::VectorXd& mu, const Eigen::MatrixXd& sigma);
+	Eigen::RowVectorXd estimateExpectationStep(const Eigen::MatrixXd data_block, const Eigen::VectorXd& mu, const Eigen::MatrixXd& sigma);
     // 后序不能再重复的添加 引用&
 
 	double updateComponentProportion(const Eigen::RowVectorXd& responsibility);

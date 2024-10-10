@@ -41,21 +41,21 @@ gmModel GaussianMixture::trainGaussianMixture(Eigen::MatrixXd& data_block_raw) {
 	number_data = data_block.cols(); // 数据量
 
 	/*定义GMM参数*/
-	component_proportion.resize(number_components, 1/number_components);
+	component_proportion.resize(number_components, 1.0 / number_components);
 	mu.resize(number_data_dimension, number_components);
 	sigma.resize(number_data_dimension, number_data_dimension);
 	sigma.setZero(); // 否则，sigma会自动赋值一个很大的随机值
 	
 	/*基于KMeans++方法的初始化*/
-	KMeansPP kmeanspp(number_components, 100);
+	KMeansPP kmeanspp(number_components, 100, 1e-3);
 	kmeanspp.fit(data_block);
 	auto output = kmeanspp.getMeansAndCovariances(data_block);
 	mu = output.first;
-	auto covariances = output.second;
-	
+	auto& covariances = output.second;
 	for (int j = 0; j < number_components; j++) {
 		std::cout << covariances.block(0, j * data_block.rows(), data_block.rows(), data_block.rows()) << std::endl;
-		sigma += (1.0 / number_components * covariances.block(0, j * data_block.rows(), data_block.rows(), data_block.rows()));
+		sigma += (1.0 / number_components * covariances.block(0, j * data_block.rows(), data_block.rows(), data_block.rows())); 
+		// 1/number是int类型的除法
 		// sigma += (1 / number_components * covariances.block(0, j * data_block.rows(), data_block.rows(), data_block.rows()));
 	}
 

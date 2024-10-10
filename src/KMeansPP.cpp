@@ -6,16 +6,40 @@
 #include <ctime>
 #include <limits>
 
-// 构造函数，初始化k和最大迭代次数
-KMeansPP::KMeansPP(int k, int max_iters) : k(k), max_iters(max_iters) {}
+//// 构造函数，初始化k和最大迭代次数
+//KMeansPP::KMeansPP(int k, int max_iters) : k(k), max_iters(max_iters) {}
+//
+//// 执行K-means++初始化并运行K-means聚类
+//void KMeansPP::fit(const Eigen::MatrixXd& data) {
+//    initializeCentroids(data);
+//    for (int iter = 0; iter < max_iters; ++iter) {
+//        std::vector<int> assignments = assignClusters(data);
+//        updateCentroids(data, assignments);
+//        std::cout << "Iteration Step in Initialization kmeans++ Method: " << iter + 1 << std::endl;
+//    }
+//    std::cout << "KMeansPP Method.fit() completed" << std::endl;
+//}
+
+// 构造函数，初始化k，最大迭代次数，以及容限
+KMeansPP::KMeansPP(int k, int max_iters, double tolerance) : k(k), max_iters(max_iters), tolerance(tolerance) {}
 
 // 执行K-means++初始化并运行K-means聚类
 void KMeansPP::fit(const Eigen::MatrixXd& data) {
     initializeCentroids(data);
     for (int iter = 0; iter < max_iters; ++iter) {
         std::vector<int> assignments = assignClusters(data);
+        Eigen::MatrixXd old_centroids = centroids;  // 保存旧的质心
         updateCentroids(data, assignments);
-        std::cout << "Iteration Step in Initialization kmeans++ Method: " << iter + 1 << std::endl;
+
+        // 计算质心的变化
+        double centroid_shift = (centroids - old_centroids).norm();
+        std::cout << "Iteration Step: " << iter + 1 << ", Centroid shift: " << centroid_shift << std::endl;
+
+        // 检查是否提前停止
+        if (centroid_shift < tolerance) {
+            std::cout << "Early stopping at iteration " << iter + 1 << " due to centroid shift below tolerance." << std::endl;
+            break;
+        }
     }
     std::cout << "KMeansPP Method.fit() completed" << std::endl;
 }
