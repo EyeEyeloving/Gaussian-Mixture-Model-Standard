@@ -29,5 +29,7 @@ end
 
 %%
 para_init = struct('mu', mu, 'Sigma', sigma, 'ComponentProportion', PComponents);
+% GMModel = fitgmdist(data_block, k, "CovarianceType", "full", "SharedCovariance", true, ...
+%     "Start", para_init);
 GMModel = fitgmdist(data_block, k, "CovarianceType", "full", "SharedCovariance", true, ...
-    "Start", para_init);
+    "Start", "plus");

@@ -1,9 +1,10 @@
 #include "GaussianMixture.h"
-#include "KMeansPP.h"
+// #include "KMeansPP.h"
+#include "KMeansSegmentation.h"
 
 GaussianMixture::GaussianMixture()
 	: number_data_dimension(1), number_data(1), number_components(5), early_stop(false), max_iter(100) {
-	component_proportion.resize(1, 5.0);
+	component_proportion.resize(5, 1.0 / 5);
 	mu.resize(1, 5);
 	sigma.resize(1, 1);
 }
@@ -46,18 +47,25 @@ gmModel GaussianMixture::trainGaussianMixture(Eigen::MatrixXd& data_block_raw) {
 	sigma.resize(number_data_dimension, number_data_dimension);
 	sigma.setZero(); // 否则，sigma会自动赋值一个很大的随机值
 	
-	/*基于KMeans++方法的初始化*/
-	KMeansPP kmeanspp(number_components, 100, 1e-3);
+	//*基于KMeans++方法的初始化*/
+
+	KMeansSegmentation kmeanspp(number_components);
 	kmeanspp.fit(data_block);
-	auto output = kmeanspp.getMeansAndCovariances(data_block);
-	mu = output.first;
-	auto& covariances = output.second;
-	for (int j = 0; j < number_components; j++) {
-		std::cout << covariances.block(0, j * data_block.rows(), data_block.rows(), data_block.rows()) << std::endl;
-		sigma += (1.0 / number_components * covariances.block(0, j * data_block.rows(), data_block.rows(), data_block.rows())); 
-		// 1/number是int类型的除法
-		// sigma += (1 / number_components * covariances.block(0, j * data_block.rows(), data_block.rows(), data_block.rows()));
-	}
+	auto init_paras = kmeanspp.getInitialParameter();
+	mu = init_paras.mu;
+	sigma = init_paras.covariance;
+
+	//KMeansPP kmeanspp(number_components, 100, 1e-3);
+	//kmeanspp.fit(data_block);
+	//auto output = kmeanspp.getMeansAndCovariances(data_block);
+	//mu = output.first;
+	//auto& covariances = output.second;
+	//for (int j = 0; j < number_components; j++) {
+	//	std::cout << covariances.block(0, j * data_block.rows(), data_block.rows(), data_block.rows()) << std::endl;
+	//	sigma += (1.0 / number_components * covariances.block(0, j * data_block.rows(), data_block.rows(), data_block.rows())); 
+	//	// 1/number是int类型的除法
+	//	// sigma += (1 / number_components * covariances.block(0, j * data_block.rows(), data_block.rows(), data_block.rows()));
+	//}
 
 	/* 打印 mu 和 sigma 的值 */
 	std::cout << "Mu (Means):\n" << mu << std::endl;
